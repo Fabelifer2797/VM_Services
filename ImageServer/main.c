@@ -6,7 +6,7 @@
  */
 #include <stdio.h>
 #include <ulfius.h>
-
+#include "histogramEqualization.h"
 #define PORT 8080
 
 /**
@@ -21,6 +21,9 @@ int callback_hello_world (const struct _u_request * request, struct _u_response 
  * main function
  */
 int main(void) {
+
+
+
     struct _u_instance instance;
 
     // Initialize instance with the port number
