@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <ulfius.h>
 #include <string.h>
-//#include "histogramEqualization.h"
 
 struct Config {
     char puerto [256];
