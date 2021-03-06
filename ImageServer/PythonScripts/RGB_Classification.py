@@ -1,11 +1,16 @@
 # Required packages for image processing
+import sys
 from PIL import Image
+from pathlib import Path
 
 # Function to classificate an image upon its rgb values
 
 def rgbClassification(imagePath, savingPath):
 
-    image = Image.open(imagePath)
+    home = str(Path.home())
+    imagePathFinal = imagePath.replace("~", home)
+    savingPathFinal = savingPath.replace("~", home)
+    image = Image.open(imagePathFinal)
     imageName = getImageName(imagePath)
     imageSize = image.size
     imageWidth = imageSize[0]
@@ -16,15 +21,15 @@ def rgbClassification(imagePath, savingPath):
 
     if indexCA == 0:
 
-        image.save(savingPath + "rojas/" + imageName)
+        image.save(savingPathFinal + "/rojas/" + imageName)
 
     elif indexCA == 1:
 
-        image.save(savingPath + "verdes/" + imageName)
+        image.save(savingPathFinal + "/verdes/" + imageName)
 
     else:
 
-        image.save(savingPath + "azules/" + imageName)
+        image.save(savingPathFinal + "/azules/" + imageName)
 
 
 
@@ -53,11 +58,10 @@ def getRGBaverage(image, width, height):
             blueValue += image.getpixel((x, y))[2]
 
     totalPixels = width * height
-    print([redValue,greenValue,blueValue])
     colorAverage = [redValue / totalPixels, greenValue / totalPixels, blueValue / totalPixels]
-    print(colorAverage)
+    # print(colorAverage)
     return colorAverage
 
 # Calling the main function for tests
 
-# rgbClassification("blue.png", "")
+rgbClassification(sys.argv[1], sys.argv[2])
