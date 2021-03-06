@@ -115,7 +115,7 @@ int callback_post (const struct _u_request * request, struct _u_response * respo
 /**
  * main function
  */
-int main(void) {
+int main(int argc, char ** argv) {
     struct _u_instance instance;
     char * rest;
     // Read config.conf and set values to config struct
@@ -142,7 +142,9 @@ int main(void) {
     if (ulfius_start_framework(&instance) == U_OK) {
         printf("Start framework on port %d\n", instance.port);
         // Wait for the user to press <enter> on the console to quit the application
-        getchar();
+        while (1) {
+            sleep(100);
+        }
     } else {
         fprintf(stderr, "Error starting framework\n");
     }
@@ -152,5 +154,5 @@ int main(void) {
     ulfius_stop_framework(&instance);
     ulfius_clean_instance(&instance);
 
-    return 0;
+    return EXIT_SUCCESS;
 }
