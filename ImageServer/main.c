@@ -87,20 +87,35 @@ int callback_post (const struct _u_request * request, struct _u_response * respo
         const char * link = json_string_value(json_object_get(value, "link"));
         const char * username = json_string_value(json_object_get(value, "username"));
         const char * sel_function = json_string_value(json_object_get(value, "selected_function"));
-        char * command;
+        char * command, * delete_img;
         // Applies histogram function to the image
         if (strcmp(sel_function, "1") == 0) {
             command = msprintf("curl %s --output %s/%s", link, config.dirHistograma, name);
+            system(command);
+            char HE_path [256] = "python3 ~/servidor/PythonScripts/HistogramEqualization.py";
+            char buffer [800];
+            snprintf(buffer, sizeof(buffer), "%s %s/%s %s", HE_path, config.dirHistograma, name, config.dirHistograma );
+            printf("%s\n", buffer);
+            system(buffer);
+            delete_img = msprintf("rm %s/%s", config.dirHistograma, name);
+            system(delete_img);
         }
         // Applies color function to the image
         else if (strcmp(sel_function, "2") == 0) {
             command = msprintf("curl %s --output %s/%s", link, config.dirColores, name);
+            system(command);
+            char RGB_path [256] = "python3 ~/servidor/PythonScripts/RGB_Classification.py";
+            char buffer [800];
+            snprintf(buffer, sizeof(buffer), "%s %s/%s %s", RGB_path, config.dirColores, name, config.dirColores );
+            system(buffer);
+            delete_img = msprintf("rm %s/%s", config.dirColores, name);
+            system(delete_img);
         }
         else {
             command = msprintf("curl %s --output %s", link, name);
         }
         printf("comando: %s\n", command);
-        system(command);
+        //system(command);
     }
     // Create response json
     json_response = json_object();
@@ -125,7 +140,7 @@ int main(int argc, char ** argv) {
     // Initialize instance with the port number
     if (ulfius_init_instance(&instance, port, NULL, NULL) != U_OK) {
         fprintf(stderr, "Error ulfius_init_instance, abort\n");
-        return(1);
+        return EXIT_FAILURE;
     }
 
     // callback functions declarations
