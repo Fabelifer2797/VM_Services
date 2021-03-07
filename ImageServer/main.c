@@ -92,7 +92,7 @@ int callback_post (const struct _u_request * request, struct _u_response * respo
             command = msprintf("curl %s --output %s/%s", link, config.dirHistograma, name);
             system(command);
             char HE_path [256] = "python3 ~/servidor/PythonScripts/HistogramEqualization.py";
-            char buffer [256];
+            char buffer [800];
             snprintf(buffer, sizeof(buffer), "%s %s %s", HE_path,config.dirHistograma,config.dirHistograma );
             system(buffer);
 
@@ -103,7 +103,7 @@ int callback_post (const struct _u_request * request, struct _u_response * respo
             command = msprintf("curl %s --output %s/%s", link, config.dirColores, name);
             system(command);
             char RGB_path [256] = "python3 ~/servidor/PythonScripts/RGB_Classification.py.py";
-            char buffer [256];
+            char buffer [800];
             snprintf(buffer, sizeof(buffer), "%s %s %s", RGB_path,config.dirColores,config.dirColores );
             system(buffer);
         }
@@ -127,7 +127,7 @@ int callback_post (const struct _u_request * request, struct _u_response * respo
  * main function
  */
 int main(void) {
-    
+
     struct _u_instance instance;
     char * rest;
     // Read config.conf and set values to config struct
