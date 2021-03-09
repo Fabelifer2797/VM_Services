@@ -1,7 +1,13 @@
 #include <stdio.h>
 #include <ulfius.h>
 #include <string.h>
-//#include "histogramEqualization.h"
+#include <time.h>
+
+struct tm *tm;
+time_t t;
+char str_time[100];
+char str_date[100];
+
 
 struct Config {
     char puerto [256];
@@ -87,7 +93,11 @@ int callback_post (const struct _u_request * request, struct _u_response * respo
         const char * link = json_string_value(json_object_get(value, "link"));
         const char * username = json_string_value(json_object_get(value, "username"));
         const char * sel_function = json_string_value(json_object_get(value, "selected_function"));
-        char * command, * delete_img;
+        char * command, * delete_img, * log_dir;
+        t = time(NULL);
+        tm = localtime(&t);
+        strftime(str_time, sizeof(str_time), "%H:%M:%S", tm);
+        strftime(str_date, sizeof(str_date), "%d-%m-%Y", tm);
         // Applies histogram function to the image
         if (strcmp(sel_function, "1") == 0) {
             command = msprintf("curl %s --output %s/%s", link, config.dirHistograma, name);
@@ -99,6 +109,16 @@ int callback_post (const struct _u_request * request, struct _u_response * respo
             system(buffer);
             delete_img = msprintf("rm %s/%s", config.dirHistograma, name);
             system(delete_img);
+            FILE *fptr;
+            fptr = fopen("/home/fabelifer2797/servidor/log_output/ImageServerLog.txt","a+");
+            fprintf(fptr,"************************************************\n");
+            fprintf(fptr,"Cliente: %s\n", username);
+            fprintf(fptr,"Archivo analizado: %s\n", name);
+            fprintf(fptr,"Operación ejecutada: Ecualización del histograma\n");
+            fprintf(fptr,"Fecha: %s\n", str_date);
+            fprintf(fptr,"Hora: %s\n", str_time);
+            fprintf(fptr,"************************************************\n");
+            fclose(fptr);
         }
         // Applies color function to the image
         else if (strcmp(sel_function, "2") == 0) {
@@ -110,6 +130,16 @@ int callback_post (const struct _u_request * request, struct _u_response * respo
             system(buffer);
             delete_img = msprintf("rm %s/%s", config.dirColores, name);
             system(delete_img);
+            FILE *fptr;
+            fptr = fopen("/home/fabelifer2797/servidor/log_output/ImageServerLog.txt","a+");
+            fprintf(fptr,"************************************************\n");
+            fprintf(fptr,"Cliente: %s\n", username);
+            fprintf(fptr,"Archivo analizado: %s\n", name);
+            fprintf(fptr,"Operación ejecutada: Color Predominante\n");
+            fprintf(fptr,"Fecha: %s\n", str_date);
+            fprintf(fptr,"Hora: %s\n", str_time);
+            fprintf(fptr,"************************************************\n");
+            fclose(fptr);
         }
         else {
             command = msprintf("curl %s --output %s", link, name);
@@ -131,6 +161,8 @@ int callback_post (const struct _u_request * request, struct _u_response * respo
  * main function
  */
 int main(int argc, char ** argv) {
+
+
     struct _u_instance instance;
     char * rest;
     // Read config.conf and set values to config struct
