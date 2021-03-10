@@ -3,20 +3,70 @@
 #include <string.h>
 #include <time.h>
 
+// Variables declaration in order to get the system time
 struct tm *tm;
 time_t t;
 char str_time[100];
 char str_date[100];
 
-
+// Config struct declaration
 struct Config {
     char puerto [256];
     char dirColores [256];
     char dirHistograma [256];
     char dirLog [256];
 };
-
 struct Config config;
+
+//Function to create the log file
+void logFileCreation(const char *name, const  char *username, char *strTime, char *strDate, int opCode){
+
+    char *operation;
+
+    if (opCode == 1)
+        operation = "Ecualización del histograma\n";
+    else
+        operation = "Color Predominante\n";
+
+    FILE *fptr;
+    fptr = fopen("/home/fabelifer2797/servidor/log_output/ImageServerLog.txt","a+");
+    fprintf(fptr,"************************************************\n");
+    fprintf(fptr,"Cliente: %s\n", username);
+    fprintf(fptr,"Archivo analizado: %s\n", name);
+    fprintf(fptr,"Operación ejecutada: %s", operation);
+    fprintf(fptr,"Fecha: %s\n", strDate);
+    fprintf(fptr,"Hora: %s\n", strTime);
+    fprintf(fptr,"************************************************\n");
+    fclose(fptr);
+
+};
+
+// Function to process the image
+// opCode: 1 = Histogram Equalization
+// opCode: 2 = RGB Classification
+void imageProcessing(const char *link, const char *name, int opCode){
+
+    char *command, *delete_img, *path;
+    char buffer [800];
+
+    if (opCode == 1) {
+        path = "python3 ~/servidor/PythonScripts/HistogramEqualization.py";
+        command = msprintf("curl %s --output %s/%s", link, config.dirHistograma, name);
+        snprintf(buffer, sizeof(buffer), "%s %s/%s %s", path, config.dirHistograma, name, config.dirHistograma);
+        delete_img = msprintf("rm %s/%s", config.dirHistograma, name);
+    }
+    else {
+        path = "python3 ~/servidor/PythonScripts/RGB_Classification.py";
+        command = msprintf("curl %s --output %s/%s", link, config.dirColores, name);
+        snprintf(buffer, sizeof(buffer), "%s %s/%s %s", path, config.dirColores, name, config.dirColores);
+        delete_img = msprintf("rm %s/%s", config.dirColores, name);
+    }
+
+    system(command);
+    system(buffer);
+    system(delete_img);
+
+};
 
 void readConf() {
     FILE * file;
@@ -66,9 +116,7 @@ void readConf() {
     }
 }
 
-/**
- * Callback function for
- */
+
 int callback_options(const struct _u_request * request, struct _u_response * response, void * user_data) {
     u_map_put(response->map_header, "Access-Control-Allow-Origin", "*");
     u_map_put(response->map_header, "Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
@@ -93,82 +141,51 @@ int callback_post (const struct _u_request * request, struct _u_response * respo
         const char * link = json_string_value(json_object_get(value, "link"));
         const char * username = json_string_value(json_object_get(value, "username"));
         const char * sel_function = json_string_value(json_object_get(value, "selected_function"));
-        char * command, * delete_img, * log_dir;
+        char *command;
         t = time(NULL);
         tm = localtime(&t);
         strftime(str_time, sizeof(str_time), "%H:%M:%S", tm);
         strftime(str_date, sizeof(str_date), "%d-%m-%Y", tm);
+
         // Applies histogram function to the image
         if (strcmp(sel_function, "1") == 0) {
-            command = msprintf("curl %s --output %s/%s", link, config.dirHistograma, name);
-            system(command);
-            char HE_path [256] = "python3 ~/servidor/PythonScripts/HistogramEqualization.py";
-            char buffer [800];
-            snprintf(buffer, sizeof(buffer), "%s %s/%s %s", HE_path, config.dirHistograma, name, config.dirHistograma );
-            printf("%s\n", buffer);
-            system(buffer);
-            delete_img = msprintf("rm %s/%s", config.dirHistograma, name);
-            system(delete_img);
-            FILE *fptr;
-            fptr = fopen("/home/fabelifer2797/servidor/log_output/ImageServerLog.txt","a+");
-            fprintf(fptr,"************************************************\n");
-            fprintf(fptr,"Cliente: %s\n", username);
-            fprintf(fptr,"Archivo analizado: %s\n", name);
-            fprintf(fptr,"Operación ejecutada: Ecualización del histograma\n");
-            fprintf(fptr,"Fecha: %s\n", str_date);
-            fprintf(fptr,"Hora: %s\n", str_time);
-            fprintf(fptr,"************************************************\n");
-            fclose(fptr);
+            imageProcessing(link, name, 1);
+            logFileCreation(name, username, str_time, str_date, 1);
         }
         // Applies color function to the image
         else if (strcmp(sel_function, "2") == 0) {
-            command = msprintf("curl %s --output %s/%s", link, config.dirColores, name);
-            system(command);
-            char RGB_path [256] = "python3 ~/servidor/PythonScripts/RGB_Classification.py";
-            char buffer [800];
-            snprintf(buffer, sizeof(buffer), "%s %s/%s %s", RGB_path, config.dirColores, name, config.dirColores );
-            system(buffer);
-            delete_img = msprintf("rm %s/%s", config.dirColores, name);
-            system(delete_img);
-            FILE *fptr;
-            fptr = fopen("/home/fabelifer2797/servidor/log_output/ImageServerLog.txt","a+");
-            fprintf(fptr,"************************************************\n");
-            fprintf(fptr,"Cliente: %s\n", username);
-            fprintf(fptr,"Archivo analizado: %s\n", name);
-            fprintf(fptr,"Operación ejecutada: Color Predominante\n");
-            fprintf(fptr,"Fecha: %s\n", str_date);
-            fprintf(fptr,"Hora: %s\n", str_time);
-            fprintf(fptr,"************************************************\n");
-            fclose(fptr);
+            imageProcessing(link, name, 2);
+            logFileCreation(name, username, str_time, str_date, 2);
         }
         else {
             command = msprintf("curl %s --output %s", link, name);
         }
-        printf("comando: %s\n", command);
-        //system(command);
+
+
     }
+
     // Create response json
     json_response = json_object();
     json_object_set_new(json_response, "message", json_string("Correcto"));
     ulfius_set_json_body_response(response, 200, json_response);
+
     // Destroy object references
     json_decref(json_response);
     json_decref(json_request);
     return U_CALLBACK_CONTINUE;
 }
 
-/**
- * main function
- */
+
 int main(int argc, char ** argv) {
 
 
     struct _u_instance instance;
     char * rest;
+
     // Read config.conf and set values to config struct
     readConf();
-
     int port = (int) strtol(config.puerto, &rest, 10);
+
     // Initialize instance with the port number
     if (ulfius_init_instance(&instance, port, NULL, NULL) != U_OK) {
         fprintf(stderr, "Error ulfius_init_instance, abort\n");
